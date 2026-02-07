@@ -1,3 +1,5 @@
+from http.client import HTTPException
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -5,6 +7,9 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models import DBUser
 from app.schemas import UserOut
+from app.schemas.user import UserUpdate
+from app.security import get_current_user
+
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -12,7 +17,40 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def get_users(db:AsyncSession = Depends(get_db)):
     query = select(DBUser)
     result = await db.execute(query)
-    users = result.scalars().all()
-    return users
+    return result.scalars().all()
 
 
+@router.patch("/{user_id}")
+async def update_user(user_id:int,user_data:UserUpdate,current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+    query = select(DBUser).where(DBUser.id == user_id)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404,detail="Пользователь не найден")
+
+    update_data = user_data.model_dump(exclude_unset=True)
+
+    for key,value in update_data.items():
+        setattr(user,key,value)
+
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.delete("/{user_id}")
+async def delete_user(user_id:int,current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+    query = select(DBUser).where(DBUser.id == user_id)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Нельзя удалить собственный аккаунт администратора")
+
+    await db.delete(user)
+    await db.commit()
+    return {"status": "success", "message": f"Пользователь {user_id} удален"}
