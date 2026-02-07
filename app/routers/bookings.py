@@ -48,3 +48,10 @@ async def create_booking(flight_id:int,current_user: DBUser = Depends(get_curren
     await db.refresh(new_booking)
 
     return new_booking
+
+@router.get("/my", response_model = list[Booking])
+async def get_my_bookings(current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+    query = select(DBBookings).where(DBBookings.user_id == current_user.id)
+    result = await db.execute(query)
+
+    return result.scalars().all()
