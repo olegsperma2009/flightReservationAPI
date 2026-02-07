@@ -8,14 +8,14 @@ from sqlalchemy import select
 
 from app.models import DBBookings, DBUser, DBBookings, DBFlight
 from app.schemas import Booking, BookingUpdate
-from app.security import get_current_user
+from app.security import get_current_user, verify_admin
 from app.database import get_db
 
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 @router.get("/", response_model = list[Booking])
-async def get_bookings(db:AsyncSession = Depends(get_db)):
+async def get_bookings(db:AsyncSession = Depends(get_db), admin:DBUser = Depends(verify_admin)):
     query = select(DBBookings)
     result = await db.execute(query)
     bookings = result.scalars().all()
@@ -59,7 +59,7 @@ async def create_booking(flight_id:int,current_user: DBUser = Depends(get_curren
 
 
 @router.patch("/{booking_id}")
-async def update_booking(booking_id:int,booking_data:BookingUpdate,current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+async def update_booking(booking_id:int,booking_data:BookingUpdate,current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db), admin:DBUser = Depends(verify_admin)):
     query = select(DBBookings).where(DBBookings.id == booking_id)
     result = await db.execute(query)
     booking = result.scalar_one_or_none()
@@ -87,6 +87,9 @@ async def delete_booking(booking_id:int,current_user:DBUser = Depends(get_curren
 
     if not booking:
         raise HTTPException(status_code=404, detail="Бронь не найдена")
+
+    if not current_user.is_admin and booking.user_id != booking_id:
+        raise HTTPException(status_code=403, detail="Нельзя удалить чужую бронь")
 
     query = select(DBFlight).where(DBFlight.id == booking.flight_id)
     result = await db.execute(query)

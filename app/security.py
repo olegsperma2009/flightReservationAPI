@@ -60,3 +60,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme),db:AsyncSession =
     if user is None:
         raise credentials_exeption
     return user
+
+async def verify_admin(current_user:DBUser = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Только для администраторов")
+    return current_user

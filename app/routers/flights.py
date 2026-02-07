@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from app.models import DBFlight, DBUser
 from app.schemas import Flight, FlightCreate, FlightUpdate
-from app.security import get_current_user
+from app.security import get_current_user, verify_admin
 from app.database import get_db
 
 
@@ -21,10 +21,7 @@ async def get_flights(db:AsyncSession = Depends(get_db)):
 
 
 @router.post("/")
-async def create_flight(flight_data:FlightCreate, db:AsyncSession = Depends(get_db),current_user: DBUser = Depends(get_current_user)):
-
-    if not current_user.is_admin:
-        raise HTTPException(status_code=403,detail="Только админ может добавлять рейсы")
+async def create_flight(flight_data:FlightCreate, db:AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user), admin:DBUser = Depends(verify_admin)):
 
     departure_naive = flight_data.departure_time.replace(tzinfo=None)
     arrival_naive = flight_data.arrival_time.replace(tzinfo=None)
@@ -46,7 +43,7 @@ async def create_flight(flight_data:FlightCreate, db:AsyncSession = Depends(get_
 
 
 @router.patch("/{flight_id}")
-async def update_flight(flight_id:int,flight_data:FlightUpdate,current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+async def update_flight(flight_id:int, flight_data:FlightUpdate, current_user:DBUser = Depends(get_current_user), db:AsyncSession = Depends(get_db),admin:DBUser = Depends(verify_admin)):
     query = select(DBFlight).where(DBFlight.id == flight_id)
     result = await db.execute(query)
     flight = result.scalar_one_or_none()
@@ -67,7 +64,7 @@ async def update_flight(flight_id:int,flight_data:FlightUpdate,current_user:DBUs
 
 
 @router.delete("/{flight_id}")
-async def delete_flight(flight_id:int,current_user:DBUser = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+async def delete_flight(flight_id:int, current_user:DBUser = Depends(get_current_user), db:AsyncSession = Depends(get_db), admin:DBUser = Depends(verify_admin)):
     query = select(DBFlight).where(DBFlight.id == flight_id)
     result = await db.execute(query)
     flight = result.scalar_one_or_none()
