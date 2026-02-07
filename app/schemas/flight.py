@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -11,8 +13,20 @@ class FlightBase(BaseModel):
     price: int
     remaining_seats: int
 
+
 class FlightCreate(FlightBase):
     pass
+
+
+class FlightUpdate(BaseModel):
+    flight_number: Optional[str] = None
+    departure_city: Optional[str] = None
+    arrival_city: Optional[str] = None
+    departure_time: Optional[datetime] = None
+    arrival_time: Optional[datetime] = None
+    price: Optional[int] = None
+    remaining_seats: Optional[int] = None
+
 
 class Flight(FlightBase):
     id:int
