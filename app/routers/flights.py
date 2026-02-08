@@ -17,7 +17,7 @@ router = APIRouter(prefix="/flights", tags=["Flights"])
 async def get_flights(departure_city:Optional[str] = None , arrival_city:Optional[str] = None, departure_time:Optional[datetime]= None, arrival_time:Optional[datetime]= None, price:Optional[int]= None, db:AsyncSession = Depends(get_db)):
     query = select(DBFlight)
 
-    if not get_current_user().is_admin:
+    if not get_current_user() and get_current_user().is_admin:
         query = select(DBFlight).where(DBFlight.departure_time >= datetime.now(timezone.utc).replace(tzinfo=None))
 
     if departure_city:
