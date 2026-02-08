@@ -73,6 +73,15 @@ async def update_flight(flight_id:int, flight_data:FlightUpdate, current_user:DB
 
     update_data = flight_data.model_dump(exclude_unset=True)
 
+    new_departure = update_data.get("departure_time", flight.departure_time)
+    new_arrival = update_data.get("arrival_time", flight.arrival_time)
+
+    if new_arrival <= new_departure:
+        raise HTTPException(
+            status_code=400,
+            detail="Время прилёта не может быть раньше или равно времени вылета"
+        )
+
     for key,value in update_data.items():
         if isinstance(value, datetime):
             value = value.replace(tzinfo=None)

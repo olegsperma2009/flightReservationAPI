@@ -13,7 +13,6 @@ class BookingUpdate(BaseModel):
     user_id: Optional[int] = None
     flight_id: Optional[int] = None
     ticket_number: Optional[str] = Field(None, min_length=6, max_length=7)
-    booking_date: Optional[datetime] = None
     status: Optional[str] = None
 
 
