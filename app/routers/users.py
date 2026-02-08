@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models import DBUser
 from app.schemas import UserOut
 from app.schemas.user import UserUpdate
-from app.security import get_current_user, verify_admin
+from app.security import get_current_user, verify_admin, hash_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -32,6 +32,9 @@ async def update_user(user_id:int,user_data:UserUpdate,current_user:DBUser = Dep
         raise HTTPException(status_code=403, detail="Нельзя изменить чужой аккаунт")
 
     update_data = user_data.model_dump(exclude_unset=True)
+
+    if "password" in update_data:
+        update_data["password"] = hash_password(update_data["password"])
 
     if "is_admin" in update_data and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Только администратор может изменять права доступа")
