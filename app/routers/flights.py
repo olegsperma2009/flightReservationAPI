@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,15 +14,34 @@ from app.database import get_db
 router = APIRouter(prefix="/flights", tags=["Flights"])
 
 @router.get("/",response_model=list[Flight])
-async def get_flights(db:AsyncSession = Depends(get_db)):
+async def get_flights(departure_city:Optional[str], arrival_city:Optional[str], departure_time:Optional[datetime], arrival_time:Optional[datetime], price:Optional[int], db:AsyncSession = Depends(get_db)):
     query = select(DBFlight)
+
+    if not get_current_user().is_admin:
+        query = select(DBFlight).where(DBFlight.departure_time >= datetime.now(timezone.utc).replace(tzinfo=None))
+
+    if departure_city:
+        query = query.where(DBFlight.departure_city.ilike(f"%{departure_city}%"))
+
+    if arrival_city:
+        query = query.where(DBFlight.arrival_city.ilike(f"%{arrival_city}%"))
+
+    if departure_time:
+        query = query.where(DBFlight.departure_time == departure_time.replace(tzinfo=None))
+
+    if arrival_time:
+        query = query.where(DBFlight.arrival_time == arrival_time.replace(tzinfo=None))
+
+    if price:
+        query = query.where(DBFlight.price <= price)
+
     result = await db.execute(query)
     flights = result.scalars().all()
     return flights
 
 
 @router.post("/")
-async def create_flight(flight_data:FlightCreate, db:AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user), admin:DBUser = Depends(verify_admin)):
+async def create_flight(flight_data:FlightCreate, db:AsyncSession = Depends(get_db),current_user: DBUser = Depends(get_current_user),  admin:DBUser = Depends(verify_admin)):
 
     departure_naive = flight_data.departure_time.replace(tzinfo=None)
     arrival_naive = flight_data.arrival_time.replace(tzinfo=None)
