@@ -88,7 +88,7 @@ async def delete_booking(booking_id:int,current_user:DBUser = Depends(get_curren
     if not booking:
         raise HTTPException(status_code=404, detail="Бронь не найдена")
 
-    if not current_user.is_admin and booking.user_id != booking_id:
+    if not current_user.is_admin and booking.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Нельзя удалить чужую бронь")
 
     query = select(DBFlight).where(DBFlight.id == booking.flight_id)

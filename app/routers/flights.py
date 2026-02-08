@@ -14,7 +14,7 @@ from app.database import get_db
 router = APIRouter(prefix="/flights", tags=["Flights"])
 
 @router.get("/",response_model=list[Flight])
-async def get_flights(departure_city:Optional[str], arrival_city:Optional[str], departure_time:Optional[datetime], arrival_time:Optional[datetime], price:Optional[int], db:AsyncSession = Depends(get_db)):
+async def get_flights(departure_city:Optional[str] = None , arrival_city:Optional[str] = None, departure_time:Optional[datetime]= None, arrival_time:Optional[datetime]= None, price:Optional[int]= None, db:AsyncSession = Depends(get_db)):
     query = select(DBFlight)
 
     if not get_current_user().is_admin:
@@ -37,6 +37,10 @@ async def get_flights(departure_city:Optional[str], arrival_city:Optional[str], 
 
     result = await db.execute(query)
     flights = result.scalars().all()
+
+    if not flights:
+        raise HTTPException(status_code=404,detail="Не удалось найти рейсы")
+
     return flights
 
 

@@ -13,5 +13,5 @@ class DBBookings(Base):
     booking_date = Column(default=datetime.now(timezone.utc).replace(tzinfo=None))
     status = Column(String)
 
-    user = relationship("DBUser", back_populates="bookings", cascade="all, delete-orphan")
-    flight = relationship("DBFlight", back_populates="bookings", cascade="all, delete-orphan")
+    user = relationship("DBUser", back_populates="bookings")
+    flight = relationship("DBFlight", back_populates="bookings")
