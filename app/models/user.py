@@ -7,7 +7,8 @@ class DBUser(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     fio = Column(String)
-    email = Column(String)
+    email = Column(String, unique=True, index=True)
     password = Column(String)
     is_admin = Column(Boolean, default = False)
-    bookings = relationship("DBBookings", back_populates="user")
+
+    bookings = relationship("DBBookings", back_populates="user", cascade="all, delete-orphan")
